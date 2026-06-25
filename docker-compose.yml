@@ -1,21 +1,16 @@
-# VeloMatrix — Docker
-# Ports must match application.properties. Before `docker compose up`, run:
-#   eval "$(python3 scripts/emit_compose_env.py)"
-# or: ./scripts/docker-up.sh up --build
-
 services:
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
+      - "${BACKEND_PORT:-8500}:${BACKEND_PORT:-8500}"
     environment:
       - APPLICATION_PROPERTIES=/app/application.properties
       - DATABASE_URL=${DATABASE_URL:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - VELOMATRIX_ADMIN_API_KEY=${VELOMATRIX_ADMIN_API_KEY:-}
-      - VOLOMATRIX_DATA_BASE=/app/local/demo-data
+      - VELOMATRIX_DATA_BASE=/app/local/demo-data
       # Connector env vars — only used when bindings reference them
       - LOKI_BASE_URL=${LOKI_BASE_URL:-}
       - LOKI_BEARER_TOKEN=${LOKI_BEARER_TOKEN:-}
@@ -30,16 +25,23 @@ services:
     volumes:
       - ./application.properties:/app/application.properties:ro
       - ./backend/src:/app/src:ro
-      # Mount the gitignored local workspace so the container reads catalog + bindings
-      - ./local:/app/local:ro
+      # Uncomment to override the baked-in demo data with your own catalog + bindings:
+      # - ./local:/app/local:ro
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${BACKEND_PORT:-8500}/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "${FRONTEND_PORT}:80"
+      - "${FRONTEND_PORT:-3500}:80"
     environment:
-      - BACKEND_PORT=${BACKEND_PORT}
+      - BACKEND_PORT=${BACKEND_PORT:-8500}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

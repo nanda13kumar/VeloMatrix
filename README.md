@@ -181,7 +181,7 @@ HTTP ports are read **only** from the repo-root **`application.properties`** (wi
 | `frontend.port` | `3000` | Vite dev server, default CORS allowlist on the API |
 | `cors.extra.origins` | _(empty)_ | Optional comma-separated extra origins for the API |
 
-Docker Compose cannot read `.properties` natively — use **`./scripts/docker-up.sh`** (or `eval "$(python3 scripts/emit_compose_env.py)"` before `docker compose …`) so host port mappings match the same file.
+In Docker Compose the ports default to the values in `application.properties` (`8500` / `3500`). Override them by setting `BACKEND_PORT` and `FRONTEND_PORT` in your environment or `.env` file before running `docker compose`.
 
 Optional override: set env **`APPLICATION_PROPERTIES=/absolute/path/to/application.properties`** (used in containers and by Vite if you point it in `frontend/.env`).
 
@@ -217,12 +217,16 @@ Open **`http://localhost:<frontend.port>`** — Vite proxies `/api` to `http://1
 ### Docker (full stack)
 
 ```bash
-cp .env.example .env   # optional secrets for compose
-chmod +x scripts/docker-up.sh
-./scripts/docker-up.sh up --build
+cp .env.example .env          # optional — API keys only; skip if not needed
+
+# First run, or after any code change:
+docker compose up --build
+
+# Subsequent runs (images already built):
+docker compose up
 ```
 
-Published ports follow **`application.properties`** via `scripts/emit_compose_env.py`. UI: **`http://localhost:<frontend.port>`**.
+Demo data (`local/demo-data/catalog.json` + `bindings.json`) is generated automatically during `docker build` — no extra steps needed. Open **`http://localhost:3500`** (or whatever `frontend.port` is set to in `application.properties`).
 
 ---
 

@@ -10,6 +10,8 @@ COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend/src /app/src
+COPY scripts /app/scripts
+RUN python3 /app/scripts/seed_local_demo.py
 WORKDIR /app/src
 
 COPY backend/docker-entrypoint.sh /docker-entrypoint.sh
