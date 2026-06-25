@@ -1,0 +1,45 @@
+# VeloMatrix — Docker
+# Ports must match application.properties. Before `docker compose up`, run:
+#   eval "$(python3 scripts/emit_compose_env.py)"
+# or: ./scripts/docker-up.sh up --build
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    environment:
+      - APPLICATION_PROPERTIES=/app/application.properties
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - VELOMATRIX_ADMIN_API_KEY=${VELOMATRIX_ADMIN_API_KEY:-}
+      - VOLOMATRIX_DATA_BASE=/app/local/demo-data
+      # Connector env vars — only used when bindings reference them
+      - LOKI_BASE_URL=${LOKI_BASE_URL:-}
+      - LOKI_BEARER_TOKEN=${LOKI_BEARER_TOKEN:-}
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-}
+      - PROMETHEUS_BEARER_TOKEN=${PROMETHEUS_BEARER_TOKEN:-}
+      - SONARQUBE_URL=${SONARQUBE_URL:-}
+      - SONARQUBE_TOKEN=${SONARQUBE_TOKEN:-}
+      - SNYK_TOKEN=${SNYK_TOKEN:-}
+      - SNYK_ORG_ID=${SNYK_ORG_ID:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - TRIVY_REPORT_PATH=${TRIVY_REPORT_PATH:-}
+    volumes:
+      - ./application.properties:/app/application.properties:ro
+      - ./backend/src:/app/src:ro
+      # Mount the gitignored local workspace so the container reads catalog + bindings
+      - ./local:/app/local:ro
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:80"
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT}
+    depends_on:
+      - backend
